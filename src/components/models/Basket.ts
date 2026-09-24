@@ -1,35 +1,65 @@
-import { IProduct } from '../../types';
+import { IProduct } from "../../types";
+import { IEvents } from "../base/Events";
 
 export class Basket {
-    private items: IProduct[] = [];
+  private items: IProduct[] = [];
 
-    getItems(): IProduct[] {
-        return [...this.items];
+  constructor(private readonly events: IEvents) {}
+
+  getItems(): IProduct[] {
+    return [...this.items];
+  }
+
+  add(item: IProduct): void {
+    if (this.has(item.id)) {
+      return;
     }
 
-    add(item: IProduct): void {
-        if (!this.has(item.id)) {
-            this.items.push(item);
-        }
+    this.items.push(item);
+    this.events.emit("basket:changed", {
+      items: this.getItems(),
+      total: this.getTotal(),
+      count: this.getCount(),
+    });
+  }
+
+  delete(id: string): void {
+    const hadItem = this.has(id);
+
+    this.items = this.items.filter((item) => item.id !== id);
+
+    if (hadItem) {
+      this.events.emit("basket:changed", {
+        items: this.getItems(),
+        total: this.getTotal(),
+        count: this.getCount(),
+      });
+    }
+  }
+
+  clear(): void {
+    if (this.items.length === 0) {
+      return;
     }
 
-    delete(id: string): void {
-        this.items = this.items.filter((item) => item.id !== id);
-    }
+    this.items = [];
 
-    clear(): void {
-        this.items = [];
-    }
+    this.events.emit("basket:changed", {
+      items: this.getItems(),
+      total: this.getTotal(),
+      count: this.getCount(),
+    });
+  }
 
-    getTotal(): number {
-        return this.items.reduce((total, item) => total + (item.price ?? 0), 0);
-    }
+  getTotal(): number {
+    return this.items.reduce((total, item) => total + (item.price ?? 0), 0);
+  }
 
-    getCount(): number {
-        return this.items.length;
-    }
+  getCount(): number {
+    return this.items.length;
+  }
 
-    has(id: string): boolean {
-        return this.items.some((item) => item.id === id);
-    }
+  has(id: string): boolean {
+    return this.items.some((item) => item.id === id);
+  }
 }

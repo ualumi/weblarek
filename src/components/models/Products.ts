@@ -1,26 +1,37 @@
-import { IProduct } from '../../types';
+import { IProduct } from "../../types";
+import { IEvents } from "../base/Events";
 
 export class Products {
-    private items: IProduct[] = [];
-    private selectedProduct: IProduct | null = null;
+  private items: IProduct[] = [];
+  private selectedProduct: IProduct | null = null;
 
-    setItems(items: IProduct[]): void {
-        this.items = [...items];
-    }
+  constructor(private readonly events: IEvents) {}
 
-    getItems(): IProduct[] {
-        return [...this.items];
-    }
+  setItems(items: IProduct[]): void {
+    this.items = [...items];
 
-    getItem(id: string): IProduct | undefined {
-        return this.items.find((item) => item.id === id);
-    }
+    this.events.emit("products:changed", {
+      items: this.getItems(),
+    });
+  }
 
-    setSelected(item: IProduct | null): void {
-        this.selectedProduct = item;
-    }
+  getItems(): IProduct[] {
+    return [...this.items];
+  }
 
-    getSelected(): IProduct | null {
-        return this.selectedProduct;
-    }
+  getItem(id: string): IProduct | undefined {
+    return this.items.find((item) => item.id === id);
+  }
+
+  setSelected(item: IProduct | null): void {
+    this.selectedProduct = item;
+
+    this.events.emit("product:selected", {
+      product: item,
+    });
+  }
+
+  getSelected(): IProduct | null {
+    return this.selectedProduct;
+  }
 }
