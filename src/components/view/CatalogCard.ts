@@ -1,27 +1,43 @@
-import { IProduct } from "../../types";
-import { IEvents } from "../base/Events";
+import { ICatalogCard, IImage } from "../../types";
+import { categoryMap } from "../../utils/constants";
+import { ensureElement } from "../../utils/utils";
 import { Card } from "./Card";
 
-export class CatalogCard extends Card<IProduct> {
-  constructor(
-    container: HTMLElement,
-    private readonly events: IEvents,
-  ) {
+export class CatalogCard extends Card<ICatalogCard> {
+  private readonly categoryElement: HTMLElement;
+  private readonly imageElement: HTMLImageElement;
+
+  constructor(container: HTMLElement, onClick: () => void) {
     super(container);
+
+    this.categoryElement = ensureElement<HTMLElement>(
+      ".card__category",
+      container,
+    );
+
+    this.imageElement = ensureElement<HTMLImageElement>(
+      ".card__image",
+      container,
+    );
+
+    this.container.addEventListener("click", onClick);
   }
 
-  render(data: IProduct): HTMLElement {
-    this.setTitle(data.title);
-    this.setPrice(data.price);
-    this.setCategory(data.category);
-    this.setCardImage(data.image, data.title);
+  set category(value: string) {
+    this.categoryElement.textContent = value;
 
-    this.container.onclick = () => {
-      this.events.emit("card:select", {
-        id: data.id,
-      });
-    };
+    Object.values(categoryMap).forEach((className) => {
+      this.categoryElement.classList.remove(className);
+    });
 
-    return this.container;
+    const categoryClass = categoryMap[value as keyof typeof categoryMap];
+
+    if (categoryClass) {
+      this.categoryElement.classList.add(categoryClass);
+    }
+  }
+
+  set image(value: IImage) {
+    this.setImage(this.imageElement, value.src, value.alt);
   }
 }

@@ -1,9 +1,7 @@
 import { Component } from "../base/Component";
 import { IEvents } from "../base/Events";
-
-interface ISuccess {
-  total: number;
-}
+import { ensureElement } from "../../utils/utils";
+import { ISuccess } from "../../types";
 
 export class Success extends Component<ISuccess> {
   private readonly descriptionElement: HTMLElement;
@@ -15,22 +13,22 @@ export class Success extends Component<ISuccess> {
   ) {
     super(container);
 
-    this.descriptionElement = container.querySelector(
+    this.descriptionElement = ensureElement<HTMLElement>(
       ".order-success__description",
-    ) as HTMLElement;
+      container,
+    );
 
-    this.closeButton = container.querySelector(
+    this.closeButton = ensureElement<HTMLButtonElement>(
       ".order-success__close",
-    ) as HTMLButtonElement;
+      container,
+    );
 
     this.closeButton.addEventListener("click", () => {
       this.events.emit("success:close");
     });
   }
 
-  render(data: ISuccess): HTMLElement {
-    this.descriptionElement.textContent = `Списано ${data.total} синапсов`;
-
-    return this.container;
+  set total(value: number) {
+    this.descriptionElement.textContent = `Списано ${value} синапсов`;
   }
 }

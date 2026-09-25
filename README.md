@@ -25,20 +25,18 @@ src/
 │   ├── base/          # базовые классы
 │   ├── models/        # модели данных
 │   ├── view/          # представления
-│   ├── Presenter.ts   # презентер
 │   └── ShopApi.ts     # работа с API
 ├── scss/              # стили
 ├── types/             # типы и интерфейсы
 ├── utils/             # константы и утилиты
-├── index.html         # HTML-шаблоны
+├── pages/index.html   # HTML-шаблоны
 └── main.ts            # точка входа
 ```
 
 Основные файлы:
 
-- `main.ts` - создание и связывание компонентов приложения.
+- `main.ts` - создание и связывание компонентов, роль презентера.
 - `types/index.ts` - типы предметной области.
-- `components/Presenter.ts` - связь моделей, представлений и API.
 - `components/ShopApi.ts` - взаимодействие с API.
 - `components/base/` - базовые классы.
 - `components/models/` - модели данных.
@@ -67,7 +65,7 @@ src/
 
 ### Model
 
-Хранит и изменяет данные приложения:
+Хранит и изменяет данные приложения и уведомляет об изменениях через брокер событий:
 
 - `Products` - каталог и выбранный товар;
 - `Basket` - содержимое корзины;
@@ -79,7 +77,7 @@ src/
 
 ### Presenter
 
-Связывает Model, View и API. Обрабатывает события, управляет отображением, оформлением заказа и взаимодействием с сервером.
+Реализован в `main.ts`. Связывает Model, View и API. Обрабатывает события, управляет отображением, оформлением заказа и взаимодействием с сервером.
 
 Для обмена событиями используется `EventEmitter`.
 
@@ -92,7 +90,7 @@ src/
 **Конструктор:**
 
 ```ts
-constructor(container: HTMLElement)
+protected constructor(container: HTMLElement)
 ```
 
 Сохраняет корневой DOM-элемент.
@@ -103,7 +101,7 @@ constructor(container: HTMLElement)
 
 **Методы:**
 
-- `render(data?: Partial<T>): HTMLElement` - обновляет данные и возвращает элемент.
+- `render(data?: Partial<T>): HTMLElement` - через `Object.assign` вызывает сеттеры и возвращает `container`.
 - `setImage(element, src, alt?)` - устанавливает изображение.
 
 ## Api
@@ -133,7 +131,7 @@ constructor(baseUrl: string, options?: RequestInit)
 
 **Поле:**
 
-- `_events: Map<string | RegExp, Set<Function>>)` -  хранит коллекцию подписок на события. Ключи коллекции - названия событий или регулярное выражение, значения - коллекция функций обработчиков, которые будут вызваны при срабатывании события.
+- `_events: Map<string | RegExp, Set<Function>>` - коллекция подписок.
 
 **Методы:**
 
@@ -185,31 +183,34 @@ constructor(events: IEvents)
 
 **Методы:**
 
-- `getItems(): IProduct[]` — возвращает товары корзины.
-- `add(item: IProduct): void` — добавляет товар.
-- `delete(id: string): void` — удаляет товар по идентификатору.
-- `clear(): void` — очищает корзину.
-- `getTotal(): number` — возвращает общую стоимость товаров; товары без цены дают `0`.
-- `getCount(): number` — возвращает количество товаров.
-- `has(id: string): boolean` — проверяет наличие товара по идентификатору.
-
-
-При изменении корзины генерируется `basket:changed`.
+- `getItems(): IProduct[]` - возвращает товары корзины.
+- `add(item: IProduct): void` - добавляет товар и генерирует `basket:changed`.
+- `delete(id: string): void` - удаляет товар и генерирует `basket:changed`.
+- `clear(): void` - очищает корзину и генерирует `basket:changed`.
+- `getTotal(): number` - общая стоимость; товары без цены дают `0`.
+- `getCount(): number` - количество товаров.
+- `has(id: string): boolean` - проверяет наличие товара.
 
 ## Buyer
 
-Класс `Buyer` хранит и валидирует данные покупателя. Он поддерживает частичное обновление данных, поэтому изменение одного поля не удаляет остальные значения.
+Хранит и валидирует данные покупателя. Поддерживает частичное обновление.
+
+**Конструктор:**
+
+```ts
+constructor(events: IEvents)
+```
 
 **Поле:**
 
-Поле `data: IBuyer` хранит данные покупателя. Все поля инициализируются при создании модели. Способ оплаты имеет значение `null`. Email, телефон, адрес - пустые строки.
+- `data: IBuyer` - данные покупателя.
 
 **Методы:**
 
-- `setData(data: Partial<IBuyer>): void` — сохраняет одно или несколько полей.
-- `getData(): IBuyer` — возвращает копию данных покупателя со всеми обязательными полями.
-- `clear(): void` — сбрасывает данные покупателя до начальных значений.
-- `validate(fields?: (keyof IBuyer)[]): TBuyerErrors` — проверяет все поля или только переданные поля и возвращает ошибки по конкретным полям.
+- `setData(data: Partial<IBuyer>): void` - сохраняет поля и генерирует `buyer:changed`.
+- `getData(): IBuyer` - возвращает копию данных.
+- `clear(): void` - сбрасывает данные и генерирует `buyer:changed`.
+- `validate(fields?: (keyof IBuyer)[]): TBuyerErrors` - возвращает ошибки по полям.
 
 # Представления
 
@@ -219,49 +220,89 @@ constructor(events: IEvents)
 
 **Поля:**
 
-- `titleElement` - название;
-- `priceElement` - цена;
-- `categoryElement` - категория;
-- `imageElement` - изображение.
+- `titleElement: HTMLElement` - название;
+- `priceElement: HTMLElement` - цена.
 
-**Методы:**
+**Сеттеры:**
 
-- `setTitle()` - устанавливает название.
-- `setPrice()` - устанавливает цену.
-- `setCategory()` - устанавливает категорию.
-- `setCardImage()` - устанавливает изображение.
+- `set title(value: string)` - устанавливает название;
+- `set price(value: number | null)` - устанавливает цену (`"Бесценно"` при `null`).
 
 ## CatalogCard
 
 Карточка товара каталога. Наследуется от `Card<IProduct>`.
 
-При клике генерирует `card:select` с идентификатором товара.
+**Конструктор:**
+
+```ts
+constructor(container: HTMLElement, onClick: () => void)
+```
+
+При клике вызывает переданный колбэк (презентер захватывает `id` товара в замыкании).
+
+**Сеттеры:** `category`, `image`.
 
 ## PreviewCard
 
 Карточка подробного просмотра товара. Наследуется от `Card`.
 
-Отображает описание и управляет кнопкой добавления/удаления товара. Генерирует `basket:toggle`.
+**Конструктор:**
+
+```ts
+constructor(container: HTMLElement, events: IEvents)
+```
+
+При клике на кнопку генерирует `card:action`.
+
+**Сеттеры:** `category`, `image`, `description`, `buttonText`, `buttonDisabled`.
 
 ## BasketCard
 
 Карточка товара в корзине. Наследуется от `Card`.
 
-Отображает номер товара и кнопку удаления. Генерирует `basket:remove`.
+**Конструктор:**
+
+```ts
+constructor(container: HTMLElement, onDelete: () => void)
+```
+
+При клике на кнопку удаления вызывает переданный колбэк.
+
+**Сеттеры:** `index`.
 
 ## Gallery
 
-Отображает каталог товаров через шаблон `#card-catalog` и создаёт `CatalogCard`.
+Отображает каталог товаров.
 
-## Basket
+**Сеттер:**
+
+- `set catalog(items: HTMLElement[])` - принимает готовый массив карточек и устанавливает его через `replaceChildren(...items)`.
+
+Карточки создаёт презентер.
+
+## Basket (View)
 
 Отображает товары корзины, итоговую стоимость и кнопку оформления заказа.
 
-При пустой корзине показывает `Корзина пуста`. Генерирует `basket:checkout`.
+**Конструктор:**
+
+```ts
+constructor(container: HTMLElement, events: IEvents)
+```
+
+**Сеттеры:**
+
+- `set items(value: HTMLElement[])` - массив карточек корзины;
+- `set total(value: number)` - итоговая стоимость;
+- `set buttonDisabled(value: boolean)` - состояние кнопки оформления.
+
+При клике на кнопку генерирует `basket:checkout`.
 
 ## Header
 
 Отображает количество товаров в корзине.
+
+**Сеттер:** `set count(value: number)`.
 
 При нажатии на кнопку корзины генерирует `basket:open`.
 
@@ -271,72 +312,72 @@ constructor(events: IEvents)
 
 **Поля:**
 
-- `form` - форма;
-- `errorsElement` - блок ошибок;
-- `submitButton` - кнопка отправки.
+- `errorsElement: HTMLElement` - блок ошибок;
+- `submitButton: HTMLButtonElement` - кнопка отправки.
 
-**Методы:**
+**Конструктор:**
 
-- `setErrors()` - отображает ошибки.
-- `setSubmitEnabled()` - управляет доступностью кнопки.
+```ts
+constructor(container: HTMLFormElement, events: IEvents)
+```
 
-При отправке формы генерирует `form:submit`.
+При отправке формы генерирует `<name>:submit`, где `name` - значение атрибута `name` формы.
+
+**Сеттеры:**
+
+- `set errors(value: string[])` - отображает ошибки;
+- `set valid(value: boolean)` - управляет доступностью кнопки.
 
 ## OrderForm
 
-Первая форма заказа.
+Первая форма заказа. `OrderForm extends Form<IOrderForm>`.
 
 Позволяет выбрать способ оплаты и указать адрес.
 
 Генерирует:
 
-- `order:payment`;
-- `order:address`.
+- `order:payment` (с типизированным `payload: { payment: TPayment }`);
+- `order:address`;
+- `order:submit` (через родительский `Form`, при `name="order"`).
+
+**Сеттеры:** `address`, `payment`.
 
 ## ContactsForm
 
-Вторая форма заказа.
+Вторая форма заказа. `ContactsForm extends Form<IContactsForm>`.
 
 Позволяет указать email и телефон.
 
 Генерирует:
 
 - `contacts:email`;
-- `contacts:phone`.
+- `contacts:phone`;
+- `contacts:submit` (через родительский `Form`, при `name="contacts"`).
+
+**Сеттеры:** `email`, `phone`.
 
 ## Modal
 
 Управляет модальным окном.
 
-**Конструктор:**
-
-```ts
-constructor(container: HTMLElement)
-```
-
-**Поля:**
-
-- `closeButton` - кнопка закрытия;
-- `content` - содержимое.
-
 **Методы:**
 
-- `open(content)` - открывает модальное окно.
-- `close()` - закрывает и очищает его.
+- `open(content: HTMLElement)` - открывает окно и устанавливает содержимое через `replaceChildren`;
+- `close()` - закрывает окно и очищает содержимое.
 
-Модальное окно закрывается кнопкой или кликом вне содержимого.
+Закрывается кнопкой или кликом вне содержимого.
 
 ## Success
 
 Отображает результат успешного заказа и списанную сумму.
 
+**Сеттер:** `set total(value: number)`.
+
 При закрытии генерирует `success:close`.
 
 # ShopApi
 
-`ShopApi` - специализированный клиент API магазина.
-
-Получает `IApi` через конструктор.
+Специализированный клиент API магазина. Получает `IApi` через конструктор.
 
 **Конструктор:**
 
@@ -353,15 +394,27 @@ constructor(api: IApi)
 
 Все основные типы находятся в `src/types/index.ts`.
 
-- `IProduct` - данные товара.
-- `TPayment` - способы оплаты: `card` или `cash`.
-- `IBuyer` - данные покупателя.
-- `IProductsResponse` - ответ с каталогом.
-- `IOrderRequest` - данные заказа.
-- `IOrderResponse` - ответ после оформления заказа.
-- `TBuyerErrors` - ошибки валидации.
-- `IApi` - интерфейс HTTP-клиента.
-- `ApiPostMethods` - `POST`, `PUT`, `DELETE`.
+- `IProduct` — данные товара (id, title, price, category, image, description).
+- `IImage` — изображение товара: `{ src: string; alt: string }`.
+- `ICard` — общее состояние карточки: `{ title: string; price: number | null }`.
+- `ICatalogCard` — состояние карточки каталога. Расширяет `ICard`, добавляет `category` и `image`.
+- `IPreviewCard` — состояние карточки превью. Расширяет `ICard`, добавляет `category`, `image`, `description`, `buttonText`, `buttonDisabled`.
+- `IBasketCard` — состояние карточки корзины. Расширяет `ICard`, добавляет `index`.
+- `TPayment` — способы оплаты: `"card"` или `"cash"`.
+- `IBuyer` — данные покупателя: `{ payment, email, phone, address }`.
+- `TBuyerErrors` — ошибки валидации покупателя (`Partial<Record<keyof IBuyer, string>>`).
+- `IProductsResponse` — ответ с каталогом: `{ total, items }`.
+- `IOrderRequest` — данные заказа. Расширяет `IBuyer`, добавляет `items: string[]` и `total: number`.
+- `IOrderResponse` — ответ после оформления заказа: `{ id, total }`.
+- `IApi` — интерфейс HTTP-клиента (`get`, `post`).
+- `ApiPostMethods` — методы запросов: `"POST" | "PUT" | "DELETE"`.
+- `IOrderForm` — состояние формы заказа: `{ payment, address, errors: string[], valid: boolean }`.
+- `IContactsForm` — состояние формы контактов: `{ email, phone, errors: string[], valid: boolean }`.
+- `IModal` — состояние модального окна: `{ content: HTMLElement }`.
+- `IHeader` — состояние шапки: `{ count: number }`.
+- `IBasket` — состояние корзины: `{ items: HTMLElement[], total: number, buttonDisabled: boolean }`.
+- `IGallery` — состояние галереи: `{ catalog: HTMLElement[] }`.
+- `ISuccess` — состояние окна успеха: `{ total: number }`.
 
 `IProduct.price` может иметь значение `null`, если товар недоступен.
 
@@ -369,27 +422,29 @@ constructor(api: IApi)
 
 ### Модели
 
-| Событие            | Назначение          |
-| ------------------ | ------------------- |
-| `products:changed` | каталог изменился   |
-| `product:selected` | выбран другой товар |
-| `basket:changed`   | изменилась корзина  |
+| Событие            | Назначение                   |
+| ------------------ | ---------------------------- |
+| `products:changed` | каталог изменился            |
+| `product:selected` | выбран другой товар          |
+| `basket:changed`   | изменилась корзина           |
+| `buyer:changed`    | изменились данные покупателя |
 
 ### Представления
 
-| Событие           | Назначение                 |
-| ----------------- | -------------------------- |
-| `card:select`     | выбор товара               |
-| `basket:open`     | открытие корзины           |
-| `basket:remove`   | удаление товара            |
-| `basket:checkout` | переход к оформлению       |
-| `basket:toggle`   | добавление/удаление товара |
-| `order:payment`   | выбор оплаты               |
-| `order:address`   | изменение адреса           |
-| `contacts:email`  | изменение email            |
-| `contacts:phone`  | изменение телефона         |
-| `form:submit`     | отправка формы             |
-| `success:close`   | закрытие окна успеха       |
+| Событие           | Назначение                               |
+| ----------------- | ---------------------------------------- |
+| `card:select`     | выбор товара (payload `{ id }`)          |
+| `card:action`     | клик по кнопке в превью товара           |
+| `basket:open`     | открытие корзины                         |
+| `basket:remove`   | удаление товара (payload `{ id }`)       |
+| `basket:checkout` | переход к оформлению                     |
+| `order:payment`   | выбор оплаты (payload `{ payment }`)     |
+| `order:address`   | изменение адреса (payload `{ address }`) |
+| `order:submit`    | отправка формы заказа                    |
+| `contacts:email`  | изменение email (payload `{ email }`)    |
+| `contacts:phone`  | изменение телефона (payload `{ phone }`) |
+| `contacts:submit` | отправка формы контактов                 |
+| `success:close`   | закрытие окна успеха                     |
 
 # Оформление заказа
 
@@ -398,8 +453,7 @@ constructor(api: IApi)
 3. Заполняет способ оплаты и адрес.
 4. После успешной валидации переходит к контактным данным.
 5. Заполняет email и телефон.
-6. `Presenter` собирает данные заказа.
+6. Презентер собирает данные заказа.
 7. `ShopApi` отправляет заказ на сервер.
 8. После успешного ответа корзина и данные покупателя очищаются.
 9. Открывается окно успешного оформления заказа.
-

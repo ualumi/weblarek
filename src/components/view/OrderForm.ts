@@ -1,36 +1,40 @@
-import { IBuyer, TPayment } from "../../types";
+import { IOrderForm, TPayment } from "../../types";
+import { ensureElement } from "../../utils/utils";
 import { IEvents } from "../base/Events";
 import { Form } from "./Form";
 
-export class OrderForm extends Form<IBuyer> {
+export class OrderForm extends Form<IOrderForm> {
   private readonly cardButton: HTMLButtonElement;
   private readonly cashButton: HTMLButtonElement;
   private readonly addressInput: HTMLInputElement;
 
-  constructor(container: HTMLElement, events: IEvents) {
+  constructor(container: HTMLFormElement, events: IEvents) {
     super(container, events);
 
-    this.cardButton = this.form.querySelector(
+    this.cardButton = ensureElement<HTMLButtonElement>(
       '[name="card"]',
-    ) as HTMLButtonElement;
+      container,
+    );
 
-    this.cashButton = this.form.querySelector(
+    this.cashButton = ensureElement<HTMLButtonElement>(
       '[name="cash"]',
-    ) as HTMLButtonElement;
+      container,
+    );
 
-    this.addressInput = this.form.querySelector(
+    this.addressInput = ensureElement<HTMLInputElement>(
       '[name="address"]',
-    ) as HTMLInputElement;
+      container,
+    );
 
     this.cardButton.addEventListener("click", () => {
-      this.events.emit("order:payment", {
-        payment: "card" as TPayment,
+      this.events.emit<{ payment: TPayment }>("order:payment", {
+        payment: "card",
       });
     });
 
     this.cashButton.addEventListener("click", () => {
-      this.events.emit("order:payment", {
-        payment: "cash" as TPayment,
+      this.events.emit<{ payment: TPayment }>("order:payment", {
+        payment: "cash",
       });
     });
 
@@ -41,27 +45,13 @@ export class OrderForm extends Form<IBuyer> {
     });
   }
 
-  render(data: IBuyer): HTMLElement {
-    this.addressInput.value = data.address;
-
-    this.cardButton.classList.toggle(
-      "button_alt-active",
-      data.payment === "card",
-    );
-
-    this.cashButton.classList.toggle(
-      "button_alt-active",
-      data.payment === "cash",
-    );
-
-    return this.container;
+  set address(value: string) {
+    this.addressInput.value = value;
   }
 
-  showErrors(errors: string[]): void {
-    this.setErrors(errors);
-  }
+  set payment(value: TPayment | null) {
+    this.cardButton.classList.toggle("button_alt-active", value === "card");
 
-  setSubmitState(enabled: boolean): void {
-    this.setSubmitEnabled(enabled);
+    this.cashButton.classList.toggle("button_alt-active", value === "cash");
   }
 }

@@ -11,44 +11,18 @@ export class Basket {
   }
 
   add(item: IProduct): void {
-    if (this.has(item.id)) {
-      return;
-    }
-
     this.items.push(item);
-    this.events.emit("basket:changed", {
-      items: this.getItems(),
-      total: this.getTotal(),
-      count: this.getCount(),
-    });
+    this.events.emit("basket:changed");
   }
 
   delete(id: string): void {
-    const hadItem = this.has(id);
-
     this.items = this.items.filter((item) => item.id !== id);
-
-    if (hadItem) {
-      this.events.emit("basket:changed", {
-        items: this.getItems(),
-        total: this.getTotal(),
-        count: this.getCount(),
-      });
-    }
+    this.events.emit("basket:changed");
   }
 
   clear(): void {
-    if (this.items.length === 0) {
-      return;
-    }
-
     this.items = [];
-
-    this.events.emit("basket:changed", {
-      items: this.getItems(),
-      total: this.getTotal(),
-      count: this.getCount(),
-    });
+    this.events.emit("basket:changed");
   }
 
   getTotal(): number {

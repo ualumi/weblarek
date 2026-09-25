@@ -1,8 +1,6 @@
 import { Component } from "../base/Component";
-
-interface IModal {
-  content: HTMLElement;
-}
+import { ensureElement } from "../../utils/utils";
+import { IModal } from "../../types";
 
 export class Modal extends Component<IModal> {
   private readonly closeButton: HTMLButtonElement;
@@ -11,11 +9,12 @@ export class Modal extends Component<IModal> {
   constructor(container: HTMLElement) {
     super(container);
 
-    this.closeButton = container.querySelector(
+    this.closeButton = ensureElement<HTMLButtonElement>(
       ".modal__close",
-    ) as HTMLButtonElement;
+      container,
+    );
 
-    this.content = container.querySelector(".modal__content") as HTMLElement;
+    this.content = ensureElement<HTMLElement>(".modal__content", container);
 
     this.closeButton.addEventListener("click", () => {
       this.close();

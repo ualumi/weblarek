@@ -1,41 +1,35 @@
 import { Component } from "../base/Component";
 import { IEvents } from "../base/Events";
+import { ensureElement } from "../../utils/utils";
 
 export abstract class Form<T> extends Component<T> {
-  protected readonly form: HTMLFormElement;
   protected readonly errorsElement: HTMLElement;
   protected readonly submitButton: HTMLButtonElement;
 
   constructor(
-    container: HTMLElement,
+    protected readonly container: HTMLFormElement,
     protected readonly events: IEvents,
   ) {
     super(container);
 
-    this.form = container as HTMLFormElement;
+    this.errorsElement = ensureElement<HTMLElement>(".form__errors", container);
 
-    this.errorsElement = this.form.querySelector(
-      ".form__errors",
-    ) as HTMLElement;
-
-    this.submitButton = this.form.querySelector(
+    this.submitButton = ensureElement<HTMLButtonElement>(
       'button[type="submit"]',
-    ) as HTMLButtonElement;
+      container,
+    );
 
-    this.form.addEventListener("submit", (event) => {
+    this.container.addEventListener("submit", (event) => {
       event.preventDefault();
-
-      this.events.emit("form:submit", {
-        form: this.form.name,
-      });
+      this.events.emit(`${this.container.name}:submit`);
     });
   }
 
-  protected setErrors(errors: string[]): void {
+  set errors(errors: string[]) {
     this.errorsElement.textContent = errors.join(", ");
   }
 
-  protected setSubmitEnabled(enabled: boolean): void {
-    this.submitButton.disabled = !enabled;
+  set valid(isValid: boolean) {
+    this.submitButton.disabled = !isValid;
   }
 }

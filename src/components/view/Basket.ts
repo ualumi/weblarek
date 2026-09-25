@@ -1,18 +1,12 @@
 import { Component } from "../base/Component";
 import { IEvents } from "../base/Events";
-import { IProduct } from "../../types";
-import { BasketCard } from "./BasketCard";
-
-interface IBasket {
-  items: IProduct[];
-  total: number;
-}
+import { ensureElement } from "../../utils/utils";
+import { IBasket } from "../../types";
 
 export class Basket extends Component<IBasket> {
   private readonly listElement: HTMLElement;
   private readonly priceElement: HTMLElement;
   private readonly orderButton: HTMLButtonElement;
-  private readonly template: HTMLTemplateElement;
 
   constructor(
     container: HTMLElement,
@@ -20,46 +14,29 @@ export class Basket extends Component<IBasket> {
   ) {
     super(container);
 
-    this.listElement = container.querySelector(".basket__list") as HTMLElement;
+    this.listElement = ensureElement<HTMLElement>(".basket__list", container);
 
-    this.priceElement = container.querySelector(
-      ".basket__price",
-    ) as HTMLElement;
+    this.priceElement = ensureElement<HTMLElement>(".basket__price", container);
 
-    this.orderButton = container.querySelector(
+    this.orderButton = ensureElement<HTMLButtonElement>(
       ".basket__button",
-    ) as HTMLButtonElement;
-
-    this.template = document.querySelector(
-      "#card-basket",
-    ) as HTMLTemplateElement;
+      container,
+    );
 
     this.orderButton.addEventListener("click", () => {
       this.events.emit("basket:checkout");
     });
   }
 
-  render(data: IBasket): HTMLElement {
-    this.listElement.replaceChildren();
+  set items(value: HTMLElement[]) {
+    this.listElement.replaceChildren(...value);
+  }
 
-    data.items.forEach((product, index) => {
-      const cardElement = this.template.content.firstElementChild?.cloneNode(
-        true,
-      ) as HTMLElement;
+  set total(value: number) {
+    this.priceElement.textContent = `${value} синапсов`;
+  }
 
-      const card = new BasketCard(cardElement, this.events);
-
-      this.listElement.append(
-        card.render({
-          ...product,
-          index: index + 1,
-        }),
-      );
-    });
-
-    this.priceElement.textContent = `${data.total} синапсов`;
-    this.orderButton.disabled = data.items.length === 0;
-
-    return this.container;
+  set buttonDisabled(value: boolean) {
+    this.orderButton.disabled = value;
   }
 }

@@ -1,12 +1,12 @@
-import { IProduct } from "../../types";
+import { IImage, IPreviewCard } from "../../types";
+import { categoryMap } from "../../utils/constants";
+import { ensureElement } from "../../utils/utils";
 import { IEvents } from "../base/Events";
 import { Card } from "./Card";
 
-interface IPreviewCard extends IProduct {
-  inBasket: boolean;
-}
-
 export class PreviewCard extends Card<IPreviewCard> {
+  private readonly categoryElement: HTMLElement;
+  private readonly imageElement: HTMLImageElement;
   private readonly descriptionElement: HTMLElement;
   private readonly actionButton: HTMLButtonElement;
 
@@ -16,37 +16,58 @@ export class PreviewCard extends Card<IPreviewCard> {
   ) {
     super(container);
 
-    this.descriptionElement = container.querySelector(
-      ".card__text",
-    ) as HTMLElement;
+    this.categoryElement = ensureElement<HTMLElement>(
+      ".card__category",
+      container,
+    );
 
-    this.actionButton = container.querySelector(
+    this.imageElement = ensureElement<HTMLImageElement>(
+      ".card__image",
+      container,
+    );
+
+    this.descriptionElement = ensureElement<HTMLElement>(
+      ".card__text",
+      container,
+    );
+
+    this.actionButton = ensureElement<HTMLButtonElement>(
       ".card__button",
-    ) as HTMLButtonElement;
+      container,
+    );
 
     this.actionButton.addEventListener("click", () => {
-      this.events.emit("basket:toggle");
+      this.events.emit("card:action");
     });
   }
 
-  render(data: IPreviewCard): HTMLElement {
-    this.setTitle(data.title);
-    this.setPrice(data.price);
-    this.setCategory(data.category);
-    this.setCardImage(data.image, data.title);
+  set category(value: string) {
+    this.categoryElement.textContent = value;
 
-    this.descriptionElement.textContent = data.description;
+    Object.values(categoryMap).forEach((className) => {
+      this.categoryElement.classList.remove(className);
+    });
 
-    if (data.price === null) {
-      this.actionButton.disabled = true;
-      this.actionButton.textContent = "Недоступно";
-    } else {
-      this.actionButton.disabled = false;
-      this.actionButton.textContent = data.inBasket
-        ? "Удалить из корзины"
-        : "В корзину";
+    const categoryClass = categoryMap[value as keyof typeof categoryMap];
+
+    if (categoryClass) {
+      this.categoryElement.classList.add(categoryClass);
     }
+  }
 
-    return this.container;
+  set image(value: IImage) {
+    this.setImage(this.imageElement, value.src, value.alt);
+  }
+
+  set description(value: string) {
+    this.descriptionElement.textContent = value;
+  }
+
+  set buttonText(value: string) {
+    this.actionButton.textContent = value;
+  }
+
+  set buttonDisabled(value: boolean) {
+    this.actionButton.disabled = value;
   }
 }

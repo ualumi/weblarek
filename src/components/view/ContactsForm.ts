@@ -1,21 +1,24 @@
-import { IBuyer } from "../../types";
+import { IContactsForm } from "../../types";
+import { ensureElement } from "../../utils/utils";
 import { IEvents } from "../base/Events";
 import { Form } from "./Form";
 
-export class ContactsForm extends Form<IBuyer> {
+export class ContactsForm extends Form<IContactsForm> {
   private readonly emailInput: HTMLInputElement;
   private readonly phoneInput: HTMLInputElement;
 
-  constructor(container: HTMLElement, events: IEvents) {
+  constructor(container: HTMLFormElement, events: IEvents) {
     super(container, events);
 
-    this.emailInput = this.form.querySelector(
+    this.emailInput = ensureElement<HTMLInputElement>(
       '[name="email"]',
-    ) as HTMLInputElement;
+      container,
+    );
 
-    this.phoneInput = this.form.querySelector(
+    this.phoneInput = ensureElement<HTMLInputElement>(
       '[name="phone"]',
-    ) as HTMLInputElement;
+      container,
+    );
 
     this.emailInput.addEventListener("input", () => {
       this.events.emit("contacts:email", {
@@ -30,18 +33,11 @@ export class ContactsForm extends Form<IBuyer> {
     });
   }
 
-  render(data: IBuyer): HTMLElement {
-    this.emailInput.value = data.email;
-    this.phoneInput.value = data.phone;
-
-    return this.container;
+  set email(value: string) {
+    this.emailInput.value = value;
   }
 
-  showErrors(errors: string[]): void {
-    this.setErrors(errors);
-  }
-
-  setSubmitState(enabled: boolean): void {
-    this.setSubmitEnabled(enabled);
+  set phone(value: string) {
+    this.phoneInput.value = value;
   }
 }
