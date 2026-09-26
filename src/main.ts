@@ -157,7 +157,7 @@ events.on("product:selected", () => {
 events.on("card:action", () => {
   const product = productsModel.getSelected();
 
-  if (!product || product.price === null) {
+  if (!product) {
     return;
   }
 

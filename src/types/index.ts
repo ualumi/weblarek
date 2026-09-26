@@ -5,7 +5,7 @@ export type TPayment = "card" | "cash";
 export interface IProduct {
   id: string;
   description: string;
-  image: IImage;
+  image: string;
   title: string;
   category: string;
   price: number | null;
